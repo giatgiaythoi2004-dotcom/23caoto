@@ -67,13 +67,15 @@ export default function TablePage({ params }: PageProps) {
   // Check stored credentials
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedId = localStorage.getItem(`player_${roomCode}`);
-      const storedToken = localStorage.getItem(`token_${roomCode}`);
+      // Keep identity per tab so opening the same room link in another tab
+      // creates a separate player instead of reusing the first tab's seat.
+      const storedId = sessionStorage.getItem(`player_${roomCode}`);
+      const storedToken = sessionStorage.getItem(`token_${roomCode}`);
       if (storedId && storedToken) {
         setLocalPlayerId(storedId);
       } else {
-        localStorage.removeItem(`player_${roomCode}`);
-        localStorage.removeItem(`token_${roomCode}`);
+        sessionStorage.removeItem(`player_${roomCode}`);
+        sessionStorage.removeItem(`token_${roomCode}`);
         setJoinModalOpen(true);
       }
     }

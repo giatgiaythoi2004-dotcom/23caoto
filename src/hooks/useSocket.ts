@@ -24,8 +24,11 @@ export function useSocket(roomCode?: string) {
       setIsConnected(true);
 
       if (roomCode && typeof window !== 'undefined') {
-        const storedPlayerId = localStorage.getItem(`player_${roomCode}`);
-        const storedToken = localStorage.getItem(`token_${roomCode}`);
+        // Identity is scoped to this browser tab. localStorage is shared by
+        // every tab/window, which made copied room links appear as the same
+        // player when opened side-by-side.
+        const storedPlayerId = sessionStorage.getItem(`player_${roomCode}`);
+        const storedToken = sessionStorage.getItem(`token_${roomCode}`);
         if (storedPlayerId && storedToken) {
           socket.emit(
             'room:reconnect',
@@ -36,8 +39,8 @@ export function useSocket(roomCode?: string) {
               } else {
                 // Stale credentials must not leave the page stuck on a player
                 // that the server no longer recognizes.
-                localStorage.removeItem(`player_${roomCode}`);
-                localStorage.removeItem(`token_${roomCode}`);
+                sessionStorage.removeItem(`player_${roomCode}`);
+                sessionStorage.removeItem(`token_${roomCode}`);
                 window.dispatchEvent(new CustomEvent('casino:reconnect-failed'));
               }
             }
@@ -51,7 +54,7 @@ export function useSocket(roomCode?: string) {
     socket.on('game:state', (state: GameState) => {
       setGameState(state);
       if (typeof window !== 'undefined' && roomCode) {
-        const myPlayerId = localStorage.getItem(`player_${roomCode}`);
+        const myPlayerId = sessionStorage.getItem(`player_${roomCode}`);
         if (myPlayerId && state.currentTurnPlayerId === myPlayerId && prevTurnPlayerId.current !== myPlayerId) {
           sound.playTurn();
         }
@@ -72,8 +75,8 @@ export function useSocket(roomCode?: string) {
       if (!socketRef.current) return;
       socketRef.current.emit('room:create', data, (res: any) => {
         if (res.success && typeof window !== 'undefined') {
-          localStorage.setItem(`player_${res.roomCode}`, res.playerId);
-          localStorage.setItem(`token_${res.roomCode}`, res.sessionToken);
+          sessionStorage.setItem(`player_${res.roomCode}`, res.playerId);
+          sessionStorage.setItem(`token_${res.roomCode}`, res.sessionToken);
         }
         callback(res);
       });
@@ -85,8 +88,8 @@ export function useSocket(roomCode?: string) {
       if (!socketRef.current) return;
       socketRef.current.emit('room:join', data, (res: any) => {
         if (res.success && typeof window !== 'undefined') {
-          localStorage.setItem(`player_${data.roomCode.toUpperCase()}`, res.playerId);
-          localStorage.setItem(`token_${data.roomCode.toUpperCase()}`, res.sessionToken);
+          sessionStorage.setItem(`player_${data.roomCode.toUpperCase()}`, res.playerId);
+          sessionStorage.setItem(`token_${data.roomCode.toUpperCase()}`, res.sessionToken);
         }
         callback(res);
       });
