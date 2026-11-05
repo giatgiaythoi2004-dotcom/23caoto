@@ -137,7 +137,7 @@ export function setupSocketHandlers(io: SocketIOServer) {
         }
 
         const player = room.players.find(
-          p => p.id === data.playerId || p.sessionToken === data.sessionToken
+          p => p.id === data.playerId && p.sessionToken === data.sessionToken
         );
 
         if (!player) {

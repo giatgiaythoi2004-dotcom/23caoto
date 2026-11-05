@@ -68,13 +68,26 @@ export default function TablePage({ params }: PageProps) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedId = localStorage.getItem(`player_${roomCode}`);
-      if (storedId) {
+      const storedToken = localStorage.getItem(`token_${roomCode}`);
+      if (storedId && storedToken) {
         setLocalPlayerId(storedId);
       } else {
+        localStorage.removeItem(`player_${roomCode}`);
+        localStorage.removeItem(`token_${roomCode}`);
         setJoinModalOpen(true);
       }
     }
   }, [roomCode]);
+
+  useEffect(() => {
+    const handleReconnectFailed = () => {
+      setLocalPlayerId(null);
+      setJoinModalOpen(true);
+      setJoinError('Phiên cũ không còn hợp lệ. Vui lòng tham gia lại phòng.');
+    };
+    window.addEventListener('casino:reconnect-failed', handleReconnectFailed);
+    return () => window.removeEventListener('casino:reconnect-failed', handleReconnectFailed);
+  }, []);
 
   const toggleSound = () => {
     const nextVal = !soundEnabled;

@@ -33,6 +33,12 @@ export function useSocket(roomCode?: string) {
             (res: any) => {
               if (res?.success && res.state) {
                 setGameState(res.state);
+              } else {
+                // Stale credentials must not leave the page stuck on a player
+                // that the server no longer recognizes.
+                localStorage.removeItem(`player_${roomCode}`);
+                localStorage.removeItem(`token_${roomCode}`);
+                window.dispatchEvent(new CustomEvent('casino:reconnect-failed'));
               }
             }
           );

@@ -93,6 +93,22 @@ export class TableEngine {
       return existing;
     }
 
+    // A player name is the visible identity at the table. Do not create a
+    // second seat with the same name: reactivate the disconnected seat, or
+    // reject the join while that name is already active.
+    const normalizedName = params.name.trim().toLocaleLowerCase();
+    const sameName = this.players.find(p => p.name.trim().toLocaleLowerCase() === normalizedName);
+    if (sameName) {
+      if (sameName.connected) {
+        throw new Error(`Tên "${sameName.name}" đang được sử dụng trong phòng!`);
+      }
+
+      sameName.connected = true;
+      sameName.socketId = params.socketId;
+      sameName.sessionToken = params.sessionToken;
+      return sameName;
+    }
+
     if (this.players.length >= this.settings.maxPlayers) {
       throw new Error('Bàn đã đủ 6 người chơi!');
     }
