@@ -423,15 +423,24 @@ export class TableEngine {
 
       case 'BET':
       case 'RAISE': {
-        const raiseAmount = payload.amount ?? (this.currentHighBet + this.minRaiseAmount);
+        // `amount` is the number of chips this player wants to add now.  Do
+        // not treat it as the player's total round bet: the latter already
+        // includes ante/blinds and caused the UI to show TỐ 10 while only 5
+        // chips were actually deducted.
+        const requestedAdditional = payload.amount ?? this.minRaiseAmount;
+        if (!Number.isFinite(requestedAdditional) || requestedAdditional <= 0) {
+          throw new Error('Số chip tố phải lớn hơn 0!');
+        }
+
+        const raiseAmount = currentRoundBet + requestedAdditional;
         // Target bet must be at least currentHighBet + minRaise, unless going all-in
         const minTargetBet = this.currentHighBet + this.minRaiseAmount;
         
-        if (raiseAmount < minTargetBet && raiseAmount - currentRoundBet < player.stack) {
+        if (raiseAmount < minTargetBet && requestedAdditional < player.stack) {
           throw new Error(`Mức cược tối thiểu phải là ${minTargetBet} chip!`);
         }
 
-        const delta = raiseAmount - currentRoundBet;
+        const delta = Math.min(requestedAdditional, player.stack);
         if (delta <= 0) {
           throw new Error('Số chip tố phải lớn hơn mức cược hiện tại!');
         }
@@ -456,7 +465,7 @@ export class TableEngine {
           timestamp: Date.now(),
         };
 
-        this.lastActionSummary = `${player.name} Tố lên ${player.currentRoundBet} chip${player.allIn ? ' (Tất tay!)' : ''}.`;
+        this.lastActionSummary = `${player.name} Tố thêm ${actualChips} chip (mức cược ${player.currentRoundBet})${player.allIn ? ' (Tất tay!)' : ''}.`;
 
         this.ledger.recordTransaction({
           roundNumber: this.roundNumber,

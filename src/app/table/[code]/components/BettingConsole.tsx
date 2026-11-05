@@ -29,16 +29,19 @@ export const BettingConsole: React.FC<BettingConsoleProps> = ({
   const minBet = gameState.settings.minBet || 5;
   const bigBlind = gameState.settings.bigBlind || minBet;
   const minRaiseTarget = currentHighBet + (gameState.minRaiseAmount || bigBlind);
+  // The control is expressed in chips to add now, not total chips committed.
+  // This keeps the number shown on TỐ equal to the number deducted from stack.
+  const minRaiseAmount = Math.max(1, minRaiseTarget - currentRoundBet);
 
-  const [raiseBet, setRaiseBet] = useState<number>(minRaiseTarget);
+  const [raiseAmount, setRaiseAmount] = useState<number>(minRaiseAmount);
   const [confirmFoldOpen, setConfirmFoldOpen] = useState(false);
 
   useEffect(() => {
-    setRaiseBet(Math.min(localPlayer.stack + currentRoundBet, Math.max(minRaiseTarget, raiseBet)));
-  }, [minRaiseTarget, localPlayer.stack, currentRoundBet]);
+    setRaiseAmount(Math.min(localPlayer.stack, Math.max(minRaiseAmount, raiseAmount)));
+  }, [minRaiseAmount, localPlayer.stack, currentRoundBet]);
 
   const canCheck = callAmount === 0;
-  const maxBetPossible = localPlayer.stack + currentRoundBet;
+  const maxRaiseAmount = localPlayer.stack;
 
   const handleFoldClick = () => {
     if (canCheck) {
@@ -49,17 +52,17 @@ export const BettingConsole: React.FC<BettingConsoleProps> = ({
   };
 
   const adjustRaise = (delta: number) => {
-    const next = Math.max(minRaiseTarget, Math.min(maxBetPossible, raiseBet + delta));
-    setRaiseBet(next);
+    const next = Math.max(minRaiseAmount, Math.min(maxRaiseAmount, raiseAmount + delta));
+    setRaiseAmount(next);
   };
 
   const setQuickBet = (target: number) => {
-    const clamped = Math.max(minRaiseTarget, Math.min(target, maxBetPossible));
-    setRaiseBet(clamped);
+    const clamped = Math.max(minRaiseAmount, Math.min(target, maxRaiseAmount));
+    setRaiseAmount(clamped);
   };
 
-  const halfPot = Math.floor(gameState.totalPot * 0.5) + currentHighBet;
-  const fullPot = gameState.totalPot + currentHighBet;
+  const halfPot = Math.floor(gameState.totalPot * 0.5) + currentHighBet - currentRoundBet;
+  const fullPot = gameState.totalPot + currentHighBet - currentRoundBet;
 
   const isLowStack = localPlayer.stack < minBet;
 
@@ -163,18 +166,18 @@ export const BettingConsole: React.FC<BettingConsoleProps> = ({
           {/* Raise section */}
           <div className="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800/80 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Mức Tố (Raise)</span>
-              <span className="font-mono font-black text-lg text-amber-400">{formatChips(raiseBet)}</span>
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Chip Tố thêm</span>
+              <span className="font-mono font-black text-lg text-amber-400">{formatChips(raiseAmount)}</span>
             </div>
 
             {/* Slider */}
             <input
               type="range"
-              min={Math.min(minRaiseTarget, maxBetPossible)}
-              max={maxBetPossible}
+              min={Math.min(minRaiseAmount, maxRaiseAmount)}
+              max={maxRaiseAmount}
               step={minBet}
-              value={raiseBet}
-              onChange={(e) => setRaiseBet(Number(e.target.value))}
+              value={raiseAmount}
+              onChange={(e) => setRaiseAmount(Number(e.target.value))}
               className="w-full h-2 bg-zinc-800 rounded-lg cursor-pointer accent-amber-500"
             />
 
@@ -260,11 +263,11 @@ export const BettingConsole: React.FC<BettingConsoleProps> = ({
             {/* RAISE */}
             <button
               type="button"
-              onClick={() => onAction('RAISE', raiseBet)}
+              onClick={() => onAction('RAISE', raiseAmount)}
               disabled={localPlayer.stack <= callAmount}
               className="py-4 px-3 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 border border-blue-400 text-white font-black text-sm tracking-wide transition-all shadow-lg shadow-blue-600/25 active:scale-[0.98] disabled:opacity-40"
             >
-              TỐ {formatChips(raiseBet)}
+              TỐ {formatChips(raiseAmount)}
             </button>
 
             {/* ALL-IN */}
